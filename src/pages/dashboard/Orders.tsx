@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -31,6 +30,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { DateRange } from "react-day-picker";
 
 // Mock orders data
 const mockOrders = Array(50).fill(0).map((_, i) => ({
@@ -99,10 +99,7 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState(mockOrders);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   });

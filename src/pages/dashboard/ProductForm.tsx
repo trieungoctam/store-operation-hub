@@ -1,239 +1,230 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
-// Mock product if ID is provided
-const mockProduct = {
-  id: 1,
-  barcode: "P1001",
-  product_name: "iPhone 15 Pro Max",
-  description: "Apple iPhone 15 Pro Max với chip A17 Pro, màn hình OLED 6.7 inch, camera 48MP và nhiều tính năng cao cấp khác.",
-  price: 34990000,
-  category_id: 1,
-  brand_id: 1,
-};
-
-// Mock categories and brands
-const mockCategories = [
-  { id: 1, name: "Điện thoại" },
-  { id: 2, name: "Laptop" },
-  { id: 3, name: "Tablet" },
-  { id: 4, name: "Phụ kiện" },
-  { id: 5, name: "Khác" },
-];
-
-const mockBrands = [
-  { id: 1, name: "Apple" },
-  { id: 2, name: "Samsung" },
-  { id: 3, name: "Xiaomi" },
-  { id: 4, name: "Dell" },
-  { id: 5, name: "Khác" },
-];
-
-// Validation schema
-const productSchema = z.object({
-  barcode: z.string().min(1, "Mã sản phẩm là bắt buộc"),
-  product_name: z.string().min(1, "Tên sản phẩm là bắt buộc"),
-  description: z.string().min(1, "Mô tả sản phẩm là bắt buộc"),
-  price: z.string().min(1, "Giá sản phẩm là bắt buộc").transform(val => parseInt(val.replace(/[^0-9]/g, ""))),
-  category_id: z.string().min(1, "Danh mục là bắt buộc"),
-  brand_id: z.string().min(1, "Thương hiệu là bắt buộc"),
+// Define the product form schema using Zod
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Tên sản phẩm phải có ít nhất 2 ký tự.",
+  }),
+  description: z.string().optional(),
+  price: z.number().min(0, {
+    message: "Giá phải lớn hơn hoặc bằng 0.",
+  }),
+  category: z.string().min(1, {
+    message: "Vui lòng chọn một danh mục.",
+  }),
+  inventory: z.number().min(0, {
+    message: "Số lượng tồn kho phải lớn hơn hoặc bằng 0.",
+  }),
+  imageUrl: z.string().url({
+    message: "Vui lòng nhập một URL hợp lệ.",
+  }),
+  isFeatured: z.boolean().default(false),
+  status: z.string().optional(),
 });
 
-type ProductFormValues = z.infer<typeof productSchema>;
+// Define the form values type based on the schema
+type FormValues = z.infer<typeof formSchema>;
+
+// Mock categories data
+const categories = [
+  { id: "1", name: "Điện thoại" },
+  { id: "2", name: "Máy tính bảng" },
+  { id: "3", name: "Laptop" },
+  { id: "4", name: "Phụ kiện" },
+];
+
+// Mock product data for editing
+const mockProduct = {
+  id: "123",
+  name: "iPhone 13 Pro",
+  description:
+    "Điện thoại iPhone 13 Pro 128GB chính hãng Apple, màn hình Super Retina XDR, chip A15 Bionic.",
+  price: 999,
+  category: "1",
+  inventory: 50,
+  imageUrl:
+    "https://cdn.tgdd.vn/Products/Images/42/230523/iphone-13-pro-max-gold-1-600x600.jpg",
+  isFeatured: true,
+  status: "active",
+};
 
 const ProductFormPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const isEditMode = !!id;
+  const isEditMode = Boolean(id);
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
-      barcode: "",
-      product_name: "",
-      description: "",
-      price: "0",
-      category_id: "",
-      brand_id: "",
-    },
+  // Initialize the form with useForm hook
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: isEditMode
+      ? {
+          name: mockProduct.name,
+          description: mockProduct.description || "",
+          price: mockProduct.price,
+          category: mockProduct.category,
+          inventory: mockProduct.inventory,
+          imageUrl: mockProduct.imageUrl,
+          isFeatured: mockProduct.isFeatured,
+          status: mockProduct.status || "active",
+        }
+      : {
+          name: "",
+          description: "",
+          price: 0,
+          category: "",
+          inventory: 0,
+          imageUrl: "",
+          isFeatured: false,
+          status: "active",
+        },
+    mode: "onChange",
   });
 
+  const { setValue } = form;
+
   useEffect(() => {
-    if (isEditMode) {
-      setIsLoading(true);
-      // In a real app, fetch product data from API
-      // fetch(`/api/v1/products/${id}`)
-      //   .then(res => res.json())
-      //   .then(data => {...})
-      //   .catch(err => console.error(err))
-      //   .finally(() => setIsLoading(false));
-
-      // For the mock, simulate a delay and use mock data
-      setTimeout(() => {
-        form.reset({
-          barcode: mockProduct.barcode,
-          product_name: mockProduct.product_name,
-          description: mockProduct.description,
-          price: mockProduct.price.toString(),
-          category_id: mockProduct.category_id.toString(),
-          brand_id: mockProduct.brand_id.toString(),
-        });
-        setIsLoading(false);
-      }, 300);
+    if (isEditMode && mockProduct) {
+      setValue("name", mockProduct.name);
+      setValue("description", mockProduct.description || "");
+      setValue("price", mockProduct.price);
+      setValue("category", mockProduct.category);
+      setValue("inventory", mockProduct.inventory);
+      setValue("imageUrl", mockProduct.imageUrl);
+      setValue("isFeatured", mockProduct.isFeatured);
+      setValue("status", mockProduct.status || "active");
     }
-  }, [id, form, isEditMode]);
+  }, [isEditMode, setValue]);
 
-  const onSubmit = async (data: ProductFormValues) => {
-    setIsLoading(true);
+  // Handle form submission
+  const onSubmit = (data: FormValues) => {
+    // Ensure price is a number
+    const submissionData = {
+      ...data,
+      price: Number(data.price) // Ensure price is a number
+    };
 
-    try {
-      // In a real app, send data to API
-      // const method = isEditMode ? 'PUT' : 'POST';
-      // const url = isEditMode ? `/api/v1/products/${id}` : '/api/v1/products';
-      
-      // const response = await fetch(url, {
-      //   method,
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
-      
-      // if (!response.ok) throw new Error("Failed to save product");
-      // const result = await response.json();
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      toast.success(isEditMode ? "Cập nhật sản phẩm thành công" : "Thêm sản phẩm thành công");
-      
-      // Navigate back to product list or detail
-      if (isEditMode) {
-        navigate(`/dashboard/products/${id}`);
-      } else {
-        navigate("/dashboard/products");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Có lỗi xảy ra. Vui lòng thử lại sau");
-    } finally {
-      setIsLoading(false);
-    }
+    // In a real application, you would handle the form submission here
+    console.log("Form submitted with data:", submissionData);
+    toast.success(
+      isEditMode ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!"
+    );
+    navigate("/dashboard/products");
   };
 
-  // Format price for display
-  const formatPrice = (value: string) => {
-    // Remove non-numeric characters
-    const numericValue = value.replace(/[^0-9]/g, "");
-    
-    // Format with comma separators
-    if (numericValue) {
-      return new Intl.NumberFormat('vi-VN').format(parseInt(numericValue));
+  const priceValue = form.watch("price");
+
+  useEffect(() => {
+    if (priceValue) {
+      setValue("price", Number(priceValue));
     }
-    
-    return "";
-  };
+  }, [priceValue, setValue]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Quay lại
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight ml-4">
-          {isEditMode ? `Chỉnh sửa sản phẩm #${id}` : "Thêm sản phẩm mới"}
-        </h1>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2 md:space-y-0">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {isEditMode ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isEditMode
+              ? "Chỉnh sửa thông tin chi tiết của sản phẩm."
+              : "Nhập thông tin chi tiết để tạo sản phẩm mới."}
+          </p>
+        </div>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Thông tin sản phẩm</CardTitle>
-          <CardDescription>
-            Nhập thông tin chi tiết cho sản phẩm
-          </CardDescription>
+          <CardDescription>Nhập các thông tin cơ bản của sản phẩm</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="barcode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mã sản phẩm</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nhập mã sản phẩm" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="product_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tên sản phẩm</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nhập tên sản phẩm" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên sản phẩm</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nhập tên sản phẩm" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mô tả</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Nhập mô tả sản phẩm"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="price"
-                  render={({ field: { onChange, ...field } }) => (
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Giá sản phẩm</FormLabel>
+                      <FormLabel>Giá</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const formatted = formatPrice(e.target.value);
-                              e.target.value = formatted;
-                              onChange(e);
-                            }}
-                          />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                            đ
-                          </div>
-                        </div>
+                        <Input
+                          type="number"
+                          placeholder="Nhập giá sản phẩm"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -241,75 +232,18 @@ const ProductFormPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="category_id"
+                  name="inventory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Danh mục</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn danh mục" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {mockCategories.map((category) => (
-                            <SelectItem
-                              key={category.id}
-                              value={category.id.toString()}
-                            >
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="brand_id"
-                  render={({ field }) => (
-                    <FormItem className="col-span-1">
-                      <FormLabel>Thương hiệu</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn thương hiệu" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {mockBrands.map((brand) => (
-                            <SelectItem 
-                              key={brand.id} 
-                              value={brand.id.toString()}
-                            >
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem className="col-span-2">
-                      <FormLabel>Mô tả sản phẩm</FormLabel>
+                      <FormLabel>Số lượng tồn kho</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Nhập mô tả sản phẩm chi tiết"
-                          rows={5}
+                        <Input
+                          type="number"
+                          placeholder="Nhập số lượng tồn kho"
                           {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -317,19 +251,69 @@ const ProductFormPage = () => {
                   )}
                 />
               </div>
-
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(-1)}
-                  disabled={isLoading}
-                >
-                  Hủy
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isEditMode ? "Cập nhật" : "Thêm sản phẩm"}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Danh mục</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn danh mục" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL hình ảnh</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nhập URL hình ảnh" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isFeatured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Sản phẩm nổi bật</FormLabel>
+                      <FormDescription>
+                        Chọn để hiển thị sản phẩm trên trang chủ.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end">
+                <Button type="submit">
+                  {isEditMode ? "Cập nhật" : "Tạo sản phẩm"}
                 </Button>
               </div>
             </form>

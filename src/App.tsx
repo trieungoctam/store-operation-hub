@@ -16,9 +16,6 @@ import OrdersPage from "./pages/dashboard/Orders";
 import OrderDetailPage from "./pages/dashboard/OrderDetail";
 import UsersPage from "./pages/dashboard/Users";
 import UserDetailPage from "./pages/dashboard/UserDetail";
-import ShipmentsPage from "./pages/dashboard/Shipments";
-import ShipmentDetailPage from "./pages/dashboard/ShipmentDetail";
-import ShipmentFormPage from "./pages/dashboard/ShipmentForm";
 
 const queryClient = new QueryClient();
 
@@ -41,10 +38,6 @@ const App = () => (
             <Route path="orders/:id" element={<OrderDetailPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
-            <Route path="shipments" element={<ShipmentsPage />} />
-            <Route path="shipments/new" element={<ShipmentFormPage />} />
-            <Route path="shipments/:id" element={<ShipmentDetailPage />} />
-            <Route path="shipments/:id/edit" element={<ShipmentFormPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
