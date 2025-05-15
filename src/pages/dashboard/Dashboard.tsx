@@ -1,201 +1,195 @@
 
+import { useState } from "react";
+import { ArrowUp, ArrowDown, DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowUpRight, ArrowDownRight, Package, ShoppingCart, Users, Truck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from "recharts";
 
-// Mock data
-const salesData = [
-  { name: 'T1', sales: 4000 },
-  { name: 'T2', sales: 3000 },
-  { name: 'T3', sales: 5000 },
-  { name: 'T4', sales: 2780 },
-  { name: 'T5', sales: 1890 },
-  { name: 'T6', sales: 2390 },
-  { name: 'T7', sales: 3490 },
-  { name: 'T8', sales: 4000 },
-  { name: 'T9', sales: 4500 },
-  { name: 'T10', sales: 5200 },
-  { name: 'T11', sales: 6000 },
-  { name: 'T12', sales: 7000 }
+// Mock data for statistics
+const stats = [
+  {
+    title: "Tổng doanh thu",
+    value: "120.500.000 VND",
+    change: "+12.5%",
+    icon: DollarSign,
+    trend: "up",
+  },
+  {
+    title: "Số lượng sản phẩm",
+    value: "250",
+    change: "+8.2%",
+    icon: Package,
+    trend: "up",
+  },
+  {
+    title: "Đơn hàng mới",
+    value: "48",
+    change: "+35%",
+    icon: ShoppingCart,
+    trend: "up",
+  },
+  {
+    title: "Người dùng mới",
+    value: "32",
+    change: "-4.3%",
+    icon: Users,
+    trend: "down",
+  },
+];
+
+// Mock data for charts
+const revenueData = [
+  { name: "T1", revenue: 45000000 },
+  { name: "T2", revenue: 52000000 },
+  { name: "T3", revenue: 48000000 },
+  { name: "T4", revenue: 61000000 },
+  { name: "T5", revenue: 55000000 },
+  { name: "T6", revenue: 67000000 },
+  { name: "T7", revenue: 72000000 },
+  { name: "T8", revenue: 78000000 },
+  { name: "T9", revenue: 69000000 },
+  { name: "T10", revenue: 85000000 },
+  { name: "T11", revenue: 96000000 },
+  { name: "T12", revenue: 120500000 },
 ];
 
 const categoryData = [
-  { name: 'Điện thoại', value: 400 },
-  { name: 'Laptop', value: 300 },
-  { name: 'Tablet', value: 200 },
-  { name: 'Phụ kiện', value: 100 }
+  { name: "Điện thoại", value: 35 },
+  { name: "Laptop", value: 25 },
+  { name: "Máy tính bảng", value: 15 },
+  { name: "Phụ kiện", value: 20 },
+  { name: "Khác", value: 5 },
 ];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
+// Mock data for recent orders
 const recentOrders = [
-  { id: 1, customer: 'Nguyễn Văn A', date: '15/05/2025', status: 'Đang giao hàng', amount: '2,350,000 đ' },
-  { id: 2, customer: 'Trần Thị B', date: '15/05/2025', status: 'Đã thanh toán', amount: '1,750,000 đ' },
-  { id: 3, customer: 'Lê Văn C', date: '14/05/2025', status: 'Đã hoàn thành', amount: '5,120,000 đ' },
-  { id: 4, customer: 'Hoàng Thị D', date: '14/05/2025', status: 'Đang xử lý', amount: '850,000 đ' },
-  { id: 5, customer: 'Phạm Văn E', date: '13/05/2025', status: 'Đang xử lý', amount: '3,450,000 đ' },
+  {
+    id: "ORD-001",
+    customer: "Nguyễn Văn A",
+    status: "Hoàn thành",
+    total: "5.500.000 VND",
+    date: "15/05/2025",
+  },
+  {
+    id: "ORD-002",
+    customer: "Trần Thị B",
+    status: "Đang xử lý",
+    total: "3.200.000 VND",
+    date: "15/05/2025",
+  },
+  {
+    id: "ORD-003",
+    customer: "Lê Văn C",
+    status: "Đang giao hàng",
+    total: "8.900.000 VND",
+    date: "14/05/2025",
+  },
+  {
+    id: "ORD-004",
+    customer: "Phạm Thị D",
+    status: "Hoàn thành",
+    total: "2.100.000 VND",
+    date: "13/05/2025",
+  },
+  {
+    id: "ORD-005",
+    customer: "Hoàng Văn E",
+    status: "Đã hủy",
+    total: "6.400.000 VND",
+    date: "12/05/2025",
+  },
 ];
 
-const topProducts = [
-  { id: 1, name: 'iPhone 15 Pro Max', sold: 120, revenue: '360,000,000 đ' },
-  { id: 2, name: 'Samsung Galaxy S24 Ultra', sold: 95, revenue: '285,000,000 đ' },
-  { id: 3, name: 'MacBook Pro 16"', sold: 75, revenue: '375,000,000 đ' },
-  { id: 4, name: 'AirPods Pro 2', sold: 200, revenue: '140,000,000 đ' },
-  { id: 5, name: 'iPad Pro 12.9"', sold: 65, revenue: '227,500,000 đ' },
-];
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'Đã hoàn thành':
-      return <Badge className="bg-success">Đã hoàn thành</Badge>;
-    case 'Đang giao hàng':
-      return <Badge className="bg-primary">Đang giao hàng</Badge>;
-    case 'Đã thanh toán':
-      return <Badge className="bg-primary">Đã thanh toán</Badge>;
-    case 'Đang xử lý':
-      return <Badge variant="outline">Đang xử lý</Badge>;
-    case 'Đã hủy':
-      return <Badge className="bg-destructive">Đã hủy</Badge>;
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-  }
+// Format number to Vietnamese currency
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
 const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Bảng điều khiển</h1>
         <p className="text-muted-foreground">
-          Tổng quan về hoạt động của hệ thống
+          Xem tổng quan về hoạt động của cửa hàng của bạn
         </p>
       </div>
 
-      {/* Stats */}
+      {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Doanh thu
-                </p>
-                <div className="flex items-center gap-1">
-                  <h2 className="text-2xl font-bold">126,500,000 đ</h2>
-                  <span className="text-xs text-success flex items-center">
-                    <ArrowUpRight className="h-3 w-3" />
-                    12%
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  +12% so với tháng trước
-                </p>
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                <stat.icon className="h-4 w-4" />
               </div>
-              <div className="rounded-full p-2 bg-primary/10">
-                <ShoppingCart className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Sản phẩm
-                </p>
-                <div className="flex items-center gap-1">
-                  <h2 className="text-2xl font-bold">1,256</h2>
-                  <span className="text-xs text-success flex items-center">
-                    <ArrowUpRight className="h-3 w-3" />
-                    8%
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  120 sản phẩm mới trong tháng
-                </p>
-              </div>
-              <div className="rounded-full p-2 bg-primary/10">
-                <Package className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Đơn hàng
-                </p>
-                <div className="flex items-center gap-1">
-                  <h2 className="text-2xl font-bold">450</h2>
-                  <span className="text-xs text-destructive flex items-center">
-                    <ArrowDownRight className="h-3 w-3" />
-                    3%
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  -3% so với tháng trước
-                </p>
-              </div>
-              <div className="rounded-full p-2 bg-primary/10">
-                <ShoppingCart className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Khách hàng
-                </p>
-                <div className="flex items-center gap-1">
-                  <h2 className="text-2xl font-bold">2,450</h2>
-                  <span className="text-xs text-success flex items-center">
-                    <ArrowUpRight className="h-3 w-3" />
-                    10%
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  +10% so với tháng trước
-                </p>
-              </div>
-              <div className="rounded-full p-2 bg-primary/10">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className={`text-xs flex items-center ${stat.trend === 'up' ? 'text-success' : 'text-destructive'}`}>
+                {stat.trend === 'up' ? (
+                  <ArrowUp className="mr-1 h-3 w-3" />
+                ) : (
+                  <ArrowDown className="mr-1 h-3 w-3" />
+                )}
+                {stat.change}
+                <span className="text-muted-foreground ml-1">so với tháng trước</span>
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Charts */}
+      {/* Revenue Chart */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Doanh thu theo tháng</CardTitle>
             <CardDescription>
-              Thống kê doanh thu 12 tháng gần nhất
+              Doanh thu của cửa hàng trong 12 tháng qua
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={revenueData}
+                margin={{
+                  top: 5,
+                  right: 5,
+                  left: 5,
+                  bottom: 5,
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => `${value / 1000000}M`} />
+                <Tooltip formatter={(value) => formatCurrency(value as number)} />
                 <Line
                   type="monotone"
-                  dataKey="sales"
-                  stroke="#3B82F6"
+                  dataKey="revenue"
+                  stroke="#8B5CF6"
                   strokeWidth={2}
+                  activeDot={{ r: 8 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -204,103 +198,79 @@ const Dashboard = () => {
 
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Doanh thu theo danh mục</CardTitle>
+            <CardTitle>Sản phẩm theo danh mục</CardTitle>
             <CardDescription>
-              Phân phối doanh thu theo danh mục sản phẩm
+              Phân bố sản phẩm theo danh mục (%)
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={categoryData}
+                margin={{
+                  top: 5,
+                  right: 5,
+                  left: 5,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
                 <Tooltip />
-              </PieChart>
+                <Bar dataKey="value" fill="#8B5CF6" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tables */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Đơn hàng gần đây</CardTitle>
-            <CardDescription>
-              5 đơn hàng mới nhất trong hệ thống
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left font-medium">ID</th>
-                    <th className="px-4 py-3 text-left font-medium">Khách hàng</th>
-                    <th className="px-4 py-3 text-left font-medium">Ngày</th>
-                    <th className="px-4 py-3 text-left font-medium">Trạng thái</th>
-                    <th className="px-4 py-3 text-right font-medium">Giá trị</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="border-b">
-                      <td className="px-4 py-3">#{order.id}</td>
-                      <td className="px-4 py-3">{order.customer}</td>
-                      <td className="px-4 py-3">{order.date}</td>
-                      <td className="px-4 py-3">{getStatusBadge(order.status)}</td>
-                      <td className="px-4 py-3 text-right">{order.amount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Sản phẩm bán chạy</CardTitle>
-            <CardDescription>
-              Top 5 sản phẩm bán chạy nhất
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left font-medium">Sản phẩm</th>
-                    <th className="px-4 py-3 text-right font-medium">Đã bán</th>
-                    <th className="px-4 py-3 text-right font-medium">Doanh thu</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topProducts.map((product) => (
-                    <tr key={product.id} className="border-b">
-                      <td className="px-4 py-3">{product.name}</td>
-                      <td className="px-4 py-3 text-right">{product.sold}</td>
-                      <td className="px-4 py-3 text-right">{product.revenue}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Recent Orders */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Đơn hàng gần đây</CardTitle>
+          <CardDescription>
+            Danh sách 5 đơn hàng mới nhất trong hệ thống
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Mã đơn hàng</TableHead>
+                <TableHead>Khách hàng</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead className="text-right">Tổng tiền</TableHead>
+                <TableHead>Ngày đặt</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>{order.customer}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium
+                      ${
+                        order.status === "Hoàn thành"
+                          ? "bg-success/20 text-success"
+                          : order.status === "Đã hủy"
+                            ? "bg-destructive/20 text-destructive"
+                            : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {order.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">{order.total}</TableCell>
+                  <TableCell>{order.date}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };
