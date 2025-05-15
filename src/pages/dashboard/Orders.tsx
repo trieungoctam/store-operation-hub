@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -177,7 +178,7 @@ const OrdersPage = () => {
                     <SelectValue placeholder="Trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="all-statuses">Tất cả trạng thái</SelectItem>
                     <SelectItem value="pending">Chờ xử lý</SelectItem>
                     <SelectItem value="processing">Đang xử lý</SelectItem>
                     <SelectItem value="shipped">Đang giao hàng</SelectItem>

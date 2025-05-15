@@ -130,7 +130,7 @@ const ProductsPage = () => {
                     <SelectValue placeholder="Danh mục" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tất cả danh mục</SelectItem>
+                    <SelectItem value="all-categories">Tất cả danh mục</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -146,7 +146,7 @@ const ProductsPage = () => {
                     <SelectValue placeholder="Thương hiệu" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tất cả thương hiệu</SelectItem>
+                    <SelectItem value="all-brands">Tất cả thương hiệu</SelectItem>
                     {brands.map((brand) => (
                       <SelectItem key={brand} value={brand}>
                         {brand}
