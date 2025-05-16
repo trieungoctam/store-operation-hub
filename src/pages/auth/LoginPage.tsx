@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -16,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { authService } from "@/lib/auth";
 
 const formSchema = z.object({
   username: z.string().min(1, "Tên đăng nhập là bắt buộc"),
@@ -40,34 +40,43 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // In a real app, you would call the API and store the token
-      // const response = await fetch("/api/v1/auth/login", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(data),
-      // });
-      
-      // if (!response.ok) throw new Error("Login failed");
-      // const { access_token } = await response.json();
-      // localStorage.setItem("token", access_token);
-      
-      // For demo purposes, just store a fake token
-      localStorage.setItem("token", "fake-jwt-token");
-      localStorage.setItem("user", JSON.stringify({
-        id: 1,
-        name: "Admin User",
-        role: "admin",
-        email: data.username,
-      }));
-      
-      toast.success("Đăng nhập thành công");
-      navigate("/dashboard");
+      // Ensure both username and password are present
+      if (!data.username || !data.password) {
+        throw new Error("Tên đăng nhập và mật khẩu là bắt buộc");
+      }
+
+      // First, get the token
+      const response = await authService.login({
+        username: data.username,
+        password: data.password
+      });
+
+      // Store the token
+      localStorage.setItem("token", response.access_token);
+
+      try {
+        // Then, fetch user information with the token
+        const userInfo = await authService.getUserInfo();
+
+        // Store user data
+        localStorage.setItem("user", JSON.stringify(userInfo));
+
+        toast.success("Đăng nhập thành công");
+        navigate("/dashboard");
+      } catch (userError) {
+        console.error("Failed to fetch user data:", userError);
+        // Even if we can't get user data, we can still navigate to dashboard
+        // since we have the authentication token
+        toast.success("Đăng nhập thành công");
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Đăng nhập không thành công");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Đăng nhập không thành công");
+      }
     } finally {
       setIsLoading(false);
     }

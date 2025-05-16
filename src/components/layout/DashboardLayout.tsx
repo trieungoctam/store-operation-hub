@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link } from "react-router-dom";
-import { 
-  Users, Package, ShoppingCart, Truck, LayoutDashboard, 
-  LogOut, Menu, X, Bell, Search, Sun, Moon 
+import {
+  Users, Package, ShoppingCart, Truck, LayoutDashboard,
+  LogOut, Menu, X, Bell, Search, Sun, Moon
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -17,34 +16,43 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { authService } from "@/lib/auth";
+import type { User } from "@/lib/auth";
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const { setTheme, theme } = useTheme();
 
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-    
-    if (!token || !userData) {
+    if (!authService.isAuthenticated()) {
       navigate("/login");
       return;
     }
-    
-    try {
-      setUser(JSON.parse(userData));
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      navigate("/login");
+
+    const userData = authService.getUser();
+    if (userData) {
+      setUser(userData);
+    } else {
+      // Try to fetch user data if not in localStorage
+      const fetchUserData = async () => {
+        try {
+          const userInfo = await authService.getUserInfo();
+          localStorage.setItem("user", JSON.stringify(userInfo));
+          setUser(userInfo);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          // Don't redirect to login, just show minimal UI
+        }
+      };
+      fetchUserData();
     }
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    authService.logout();
     toast.success("Đăng xuất thành công");
     navigate("/login");
   };
@@ -62,7 +70,18 @@ const DashboardLayout = () => {
   ];
 
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Đang tải...
+            </span>
+          </div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải thông tin người dùng...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -188,12 +207,12 @@ const DashboardLayout = () => {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder.svg" />
                       <AvatarFallback>
-                        {user?.name?.charAt(0) || "A"}
+                        {user?.full_name?.charAt(0) || "A"}
                       </AvatarFallback>
                     </Avatar>
                     {isSidebarOpen && (
                       <span className="ml-2 text-sm font-medium">
-                        {user?.name || "Admin"}
+                        {user?.full_name || "Admin"}
                       </span>
                     )}
                   </Button>

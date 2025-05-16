@@ -1,8 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { 
-  Plus, Search, Filter, Edit, Trash2, ChevronLeft, ChevronRight 
+import {
+  Plus, Search, Filter, Edit, Trash2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,18 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-
-// Mock products data
-const mockProducts = Array(20).fill(0).map((_, i) => ({
-  id: i + 1,
-  barcode: `P${1000 + i}`,
-  product_name: `Sản phẩm ${i + 1}`,
-  description: `Mô tả cho sản phẩm ${i + 1}`,
-  price: Math.floor(Math.random() * 10000000) + 500000,
-  category: i % 5 === 0 ? "Điện thoại" : i % 5 === 1 ? "Laptop" : i % 5 === 2 ? "Tablet" : i % 5 === 3 ? "Phụ kiện" : "Khác",
-  brand: i % 4 === 0 ? "Apple" : i % 4 === 1 ? "Samsung" : i % 4 === 2 ? "Xiaomi" : "Dell",
-  stock: Math.floor(Math.random() * 100) + 1,
-}));
+import { statsService, Product } from "@/lib/statsService";
 
 // Format price helper
 const formatPrice = (price: number) => {
@@ -51,7 +39,8 @@ const formatPrice = (price: number) => {
 };
 
 const ProductsPage = () => {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState("");
@@ -59,13 +48,35 @@ const ProductsPage = () => {
   const [productsPerPage, setProductsPerPage] = useState(10);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await statsService.getProducts(0, 1000);
+        setProducts(data);
+        console.log('Products loaded:', data);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+        toast.error("Không thể tải danh sách sản phẩm");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   // Filter products
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.product_name.toLowerCase().includes(search.toLowerCase()) ||
-                         product.barcode.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = categoryFilter ? product.category === categoryFilter : true;
-    const matchesBrand = brandFilter ? product.brand === brandFilter : true;
-    
+    const searchTerms = search.toLowerCase();
+    const matchesSearch =
+      product.product_name.toLowerCase().includes(searchTerms) ||
+      (product.barcode && product.barcode.toLowerCase().includes(searchTerms)) ||
+      (product.description && product.description.toLowerCase().includes(searchTerms));
+
+    const matchesCategory = categoryFilter ? product.category_id.toString() === categoryFilter : true;
+    const matchesBrand = brandFilter ? product.brand_id.toString() === brandFilter : true;
+
     return matchesSearch && matchesCategory && matchesBrand;
   });
 
@@ -85,8 +96,23 @@ const ProductsPage = () => {
   };
 
   // Get unique categories and brands for filters
-  const categories = Array.from(new Set(products.map(p => p.category)));
-  const brands = Array.from(new Set(products.map(p => p.brand)));
+  const categories = Array.from(new Set(products.map(p => p.category_id))).map(id => id.toString());
+  const brands = Array.from(new Set(products.map(p => p.brand_id))).map(id => id.toString());
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-150px)]">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Đang tải...
+            </span>
+          </div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Đang tải danh sách sản phẩm...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -106,7 +132,7 @@ const ProductsPage = () => {
         <CardHeader>
           <CardTitle>Danh sách sản phẩm</CardTitle>
           <CardDescription>
-            Quản lý thông tin các sản phẩm trong hệ thống
+            Quản lý thông tin các sản phẩm trong hệ thống ({products.length} sản phẩm)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,10 +156,10 @@ const ProductsPage = () => {
                     <SelectValue placeholder="Danh mục" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-categories">Tất cả danh mục</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                    <SelectItem value="">Tất cả danh mục</SelectItem>
+                    {categories.map((categoryId) => (
+                      <SelectItem key={categoryId} value={categoryId}>
+                        Danh mục {categoryId}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -146,10 +172,10 @@ const ProductsPage = () => {
                     <SelectValue placeholder="Thương hiệu" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-brands">Tất cả thương hiệu</SelectItem>
-                    {brands.map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
+                    <SelectItem value="">Tất cả thương hiệu</SelectItem>
+                    {brands.map((brandId) => (
+                      <SelectItem key={brandId} value={brandId}>
+                        Thương hiệu {brandId}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -162,7 +188,8 @@ const ProductsPage = () => {
                 <thead>
                   <tr className="border-b">
                     <th className="px-4 py-3 text-left font-medium">ID</th>
-                    <th className="px-4 py-3 text-left font-medium">Mã sản phẩm</th>
+                    <th className="px-4 py-3 text-left font-medium">Hình ảnh</th>
+                    <th className="px-4 py-3 text-left font-medium">Mã vạch</th>
                     <th className="px-4 py-3 text-left font-medium">Tên sản phẩm</th>
                     <th className="px-4 py-3 text-right font-medium">Giá</th>
                     <th className="px-4 py-3 text-left font-medium">Danh mục</th>
@@ -175,6 +202,19 @@ const ProductsPage = () => {
                   {currentProducts.map((product) => (
                     <tr key={product.id} className="border-b">
                       <td className="px-4 py-3">{product.id}</td>
+                      <td className="px-4 py-3">
+                        {product.images && product.images.length > 0 ? (
+                          <img
+                            src={product.images.find(img => img.is_primary)?.image_url || product.images[0].image_url}
+                            alt={product.product_name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-500">No image</span>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">{product.barcode}</td>
                       <td className="px-4 py-3">
                         <Link
@@ -183,11 +223,20 @@ const ProductsPage = () => {
                         >
                           {product.product_name}
                         </Link>
+                        {product.description && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {product.description}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">{formatPrice(product.price)}</td>
-                      <td className="px-4 py-3">{product.category}</td>
-                      <td className="px-4 py-3">{product.brand}</td>
-                      <td className="px-4 py-3 text-right">{product.stock}</td>
+                      <td className="px-4 py-3">
+                        {product.category_name || `Danh mục ${product.category_id}`}
+                      </td>
+                      <td className="px-4 py-3">
+                        {product.brand_name || `Thương hiệu ${product.brand_id}`}
+                      </td>
+                      <td className="px-4 py-3 text-right">{product.quantity || product.stock || 0}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center space-x-2">
                           <Button
@@ -211,13 +260,13 @@ const ProductsPage = () => {
                                   Xác nhận xóa sản phẩm
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Bạn có chắc chắn muốn xóa sản phẩm "{product.product_name}"? 
+                                  Bạn có chắc chắn muốn xóa sản phẩm "{product.product_name}"?
                                   Hành động này không thể hoàn tác.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   onClick={() => handleDelete(product.id)}
                                 >
@@ -233,11 +282,11 @@ const ProductsPage = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Pagination */}
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Hiển thị {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} 
+                Hiển thị {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)}
                 trong số {filteredProducts.length} sản phẩm
               </div>
               <div className="flex items-center space-x-2">

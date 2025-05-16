@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,9 @@ import OrdersPage from "./pages/dashboard/Orders";
 import OrderDetailPage from "./pages/dashboard/OrderDetail";
 import UsersPage from "./pages/dashboard/Users";
 import UserDetailPage from "./pages/dashboard/UserDetail";
+import ShipmentsPage from "./pages/dashboard/Shipments";
+import ShipmentDetail from "./pages/dashboard/ShipmentDetail";
+import ShipmentForm from "./pages/dashboard/ShipmentForm";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,10 @@ const App = () => (
             <Route path="orders/:id" element={<OrderDetailPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
+            <Route path="shipments" element={<ShipmentsPage />} />
+            <Route path="shipments/new" element={<ShipmentForm />} />
+            <Route path="shipments/:id" element={<ShipmentDetail />} />
+            <Route path="shipments/:id/edit" element={<ShipmentForm />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
